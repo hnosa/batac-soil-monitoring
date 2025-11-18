@@ -108,16 +108,15 @@ app.get('/api/protected-data', authenticateToken, (req, res) => {
   });
 });
 
-// ======== CATCH ALL HANDLER FOR REACT ROUTING ========
+// ======== SIMPLE CATCH-ALL FIX ========
 if (process.env.NODE_ENV === 'production') {
- // Catch all handler - send React app for any other route
-app.get('*', (req, res, next) => {
-  // Skip API routes
-  if (req.path.startsWith('/api/')) {
-    return next();
-  }
-  res.sendFile(path.join(__dirname, '../frontend/build/index.html'));
-});
+  // Serve React app for non-API routes
+  app.get('*', (req, res) => {
+    if (req.path.startsWith('/api/')) {
+      return res.status(404).json({ error: 'API endpoint not found' });
+    }
+    res.sendFile(path.join(__dirname, '../frontend/build/index.html'));
+  });
 }
 
 // Serve the test client page (development only)
