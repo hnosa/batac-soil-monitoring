@@ -1,5 +1,5 @@
 // frontend/src/components/AlertsPanel.js
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import './AlertsPanel.css';
 
 const AlertsPanel = ({ alerts, systemStatus, onMarkAsRead, onMarkAllAsRead }) => {
