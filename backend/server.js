@@ -110,9 +110,14 @@ app.get('/api/protected-data', authenticateToken, (req, res) => {
 
 // ======== CATCH ALL HANDLER FOR REACT ROUTING ========
 if (process.env.NODE_ENV === 'production') {
-  app.get('*', (req, res) => {
-    res.sendFile(path.join(__dirname, '../frontend/build/index.html'));
-  });
+ // Catch all handler - send React app for any other route
+app.get('*', (req, res, next) => {
+  // Skip API routes
+  if (req.path.startsWith('/api/')) {
+    return next();
+  }
+  res.sendFile(path.join(__dirname, '../frontend/build/index.html'));
+});
 }
 
 // Serve the test client page (development only)
