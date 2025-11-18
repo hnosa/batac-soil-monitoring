@@ -1,5 +1,4 @@
-// backend/server.js - UPDATED FOR PRODUCTION
-// Load environment variables first!
+// backend/server.js - COMPLETE REWRITE WITHOUT WILDCARD ISSUES
 import dotenv from 'dotenv';
 dotenv.config();
 
@@ -18,7 +17,7 @@ const __dirname = path.dirname(__filename);
 import { connectToDatabase } from './config/database.js';
 import sensorModel from './models/sensorModel.js';
 
-// Create Express app FIRST
+// Create Express app
 const app = express();
 const server = http.createServer(app);
 
@@ -26,13 +25,13 @@ const server = http.createServer(app);
 const io = new SocketIo(server, {
   cors: {
     origin: process.env.NODE_ENV === 'production' 
-      ? ["https://your-project.up.railway.app"] // Replace with your actual Railway URL
+      ? ["https://batac-soil-monitoring.up.railway.app"] 
       : "*",
     methods: ["GET", "POST"]
   }
 });
 
-// ======== IMPORT ROUTES ========
+// Import routes
 import { router as authRoutes, authenticateToken } from './routes/auth.js';
 import alertRoutes from './routes/alerts.js';
 import exportRoutes from './routes/export.js';
@@ -41,23 +40,17 @@ import exportRoutes from './routes/export.js';
 app.use(cors());
 app.use(express.json());
 
-// ======== PRODUCTION SETUP ========
 // Serve React build files in production
 if (process.env.NODE_ENV === 'production') {
   app.use(express.static(path.join(__dirname, '../frontend/build')));
 }
 
-// ======== ROUTES ========
+// ======== API ROUTES ========
 app.get('/api', (req, res) => {
   res.json({ 
     message: 'Batac Soil Monitoring API is running!',
     database: 'MongoDB Connected ✅',
-    environment: process.env.NODE_ENV || 'development',
-    endpoints: {
-      getAllData: 'GET /api/sensor-data',
-      getLatest: 'GET /api/sensor-data/latest',
-      getSensor: 'GET /api/sensor-data/sensor/:sensorId'
-    }
+    environment: process.env.NODE_ENV || 'development'
   });
 });
 
@@ -66,7 +59,7 @@ app.use('/api/export', exportRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/alerts', alertRoutes);
 
-// Get all sensor data from database
+// Sensor data routes
 app.get('/api/sensor-data', async (req, res) => {
   try {
     const limit = parseInt(req.query.limit) || 100;
@@ -77,7 +70,6 @@ app.get('/api/sensor-data', async (req, res) => {
   }
 });
 
-// Get latest data from each sensor from database
 app.get('/api/sensor-data/latest', async (req, res) => {
   try {
     const data = await sensorModel.getLatestReadings();
@@ -87,7 +79,6 @@ app.get('/api/sensor-data/latest', async (req, res) => {
   }
 });
 
-// Get data for specific sensor
 app.get('/api/sensor-data/sensor/:sensorId', async (req, res) => {
   try {
     const { sensorId } = req.params;
@@ -99,27 +90,53 @@ app.get('/api/sensor-data/sensor/:sensorId', async (req, res) => {
   }
 });
 
-// Protected route example
+// Protected route
 app.get('/api/protected-data', authenticateToken, (req, res) => {
   res.json({ 
     message: 'This is protected data', 
-    user: req.user,
-    sensitiveData: 'Confidential soil analytics'
+    user: req.user
   });
 });
 
-// ======== SIMPLE CATCH-ALL FIX ========
+// ======== REACT APP ROUTES (Production only) ========
 if (process.env.NODE_ENV === 'production') {
-  // Serve React app for non-API routes
-  app.get('*', (req, res) => {
+  // Define all possible React routes explicitly
+  const reactRoutes = [
+    '/',
+    '/login',
+    '/register', 
+    '/forgot-password',
+    '/reset-password',
+    '/dashboard',
+    '/map',
+    '/charts',
+    '/profile',
+    '/export'
+  ];
+
+  // Serve React app for each route
+  reactRoutes.forEach(route => {
+    app.get(route, (req, res) => {
+      res.sendFile(path.join(__dirname, '../frontend/build/index.html'));
+    });
+  });
+
+  // Serve React app for any other non-API route (without using *)
+  app.use((req, res, next) => {
     if (req.path.startsWith('/api/')) {
-      return res.status(404).json({ error: 'API endpoint not found' });
+      return next(); // Let API routes handle themselves
     }
+    // For any other route, serve React app
     res.sendFile(path.join(__dirname, '../frontend/build/index.html'));
   });
 }
 
-// Serve the test client page (development only)
+// 404 handler for API routes
+app.use('/api/*', (req, res) => {
+  res.status(404).json({ error: 'API endpoint not found' });
+});
+
+// Serve test page (development only)
 app.get('/test', (req, res) => {
   if (process.env.NODE_ENV === 'production') {
     return res.status(404).json({ message: 'Test page not available in production' });
@@ -127,8 +144,7 @@ app.get('/test', (req, res) => {
   res.sendFile(path.join(__dirname, 'test-client.html'));
 });
 
-// ======== SOCKET.IO WITH ALERTS ========
-// Realistic mock data generator for Batac City soil conditions
+// ======== SOCKET.IO ========
 function generateMockSensorData() {
   const locations = [
     { name: "Batac Farm 1", lat: 18.0554, lng: 120.5649 },
@@ -141,61 +157,50 @@ function generateMockSensorData() {
   const location = locations[Math.floor(Math.random() * locations.length)];
   
   return {
-    sensor_id: `sensor_${Math.floor(Math.random() * 5) + 1}`, // Only 5 sensors for consistency
+    sensor_id: `sensor_${Math.floor(Math.random() * 5) + 1}`,
     location: location,
-    soil_moisture: Math.floor(30 + Math.random() * 50), // 30-80%
-    temperature: parseFloat((25 + Math.random() * 10).toFixed(1)), // 25-35°C
-    humidity: Math.floor(60 + Math.random() * 25), // 60-85%
-    ph_level: parseFloat((5.5 + Math.random() * 2.5).toFixed(1)), // 5.5-8.0
-    nitrogen: Math.floor(20 + Math.random() * 60), // ppm
-    phosphorus: Math.floor(15 + Math.random() * 40), // ppm
-    potassium: Math.floor(30 + Math.random() * 70), // ppm
-    battery_level: Math.floor(20 + Math.random() * 80), // 20-100%
+    soil_moisture: Math.floor(30 + Math.random() * 50),
+    temperature: parseFloat((25 + Math.random() * 10).toFixed(1)),
+    humidity: Math.floor(60 + Math.random() * 25),
+    ph_level: parseFloat((5.5 + Math.random() * 2.5).toFixed(1)),
+    nitrogen: Math.floor(20 + Math.random() * 60),
+    phosphorus: Math.floor(15 + Math.random() * 40),
+    potassium: Math.floor(30 + Math.random() * 70),
+    battery_level: Math.floor(20 + Math.random() * 80),
     timestamp: new Date()
   };
 }
 
-// Socket.io setup
 io.on('connection', (socket) => {
   console.log('Client connected');
   
-  // Send initial data from database
   sensorModel.getAllReadings(10).then(data => {
     socket.emit('sensorData', data);
   });
 
-  // Send initial system status
   import('./services/alertService.js').then(AlertService => {
     AlertService.default.getSystemStatus().then(status => {
       socket.emit('systemStatus', status);
     });
   });
   
-  // Simulate real-time data updates every 5 seconds
   const interval = setInterval(async () => {
     const newData = generateMockSensorData();
     
     try {
-      // Save to database
       await sensorModel.createSensorReading(newData);
-      
-      // Check for alerts
       const AlertService = await import('./services/alertService.js');
       const newAlerts = await AlertService.default.checkSensorConditions(newData);
       
-      // Send new data to all connected clients
       io.emit('newSensorData', newData);
       
-      // Send alerts if any
       if (newAlerts.length > 0) {
         io.emit('newAlerts', newAlerts);
-        
-        // Update system status
         const status = await AlertService.default.getSystemStatus();
         io.emit('systemStatus', status);
       }
       
-      console.log('📊 New sensor data saved to database:', newData.sensor_id);
+      console.log('📊 New sensor data saved:', newData.sensor_id);
     } catch (error) {
       console.error('Error saving sensor data:', error);
     }
@@ -207,39 +212,7 @@ io.on('connection', (socket) => {
   });
 });
 
-// Initialize server
-async function startServer() {
-  try {
-    // Connect to database first
-    await connectToDatabase();
-    
-    // Create demo user if doesn't exist
-    await createDemoUser();
-    
-    // Start server
-    const PORT = process.env.PORT || 3001;
-    server.listen(PORT, () => {
-      console.log(`🚀 Server running on port ${PORT}`);
-      console.log(`📊 Batac Soil Monitoring API is ready!`);
-      console.log(`🗄️  MongoDB Database: Connected`);
-      console.log(`🔐 Authentication: Demo user available`);
-      console.log(`⚠️  Alert System: Active`);
-      console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
-      
-      if (process.env.NODE_ENV === 'production') {
-        console.log(`📍 Production URL: https://your-project.up.railway.app`);
-      } else {
-        console.log(`📍 Visit: http://localhost:${PORT}`);
-        console.log(`🧪 Test Client: http://localhost:${PORT}/test`);
-      }
-    });
-  } catch (error) {
-    console.error('Failed to start server:', error);
-    process.exit(1);
-  }
-}
-
-// Create demo user function
+// Create demo user
 async function createDemoUser() {
   try {
     const userModel = await import('./models/userModel.js');
@@ -249,17 +222,31 @@ async function createDemoUser() {
       password: 'demo123'
     };
     
-    // Try to create demo user, ignore if already exists
     await userModel.default.createUser(demoUser);
     console.log('✅ Demo user created: demo@batac.gov.ph / demo123');
   } catch (error) {
     if (error.message === 'User already exists') {
       console.log('✅ Demo user already exists');
-    } else {
-      console.log('⚠️  Demo user creation skipped:', error.message);
     }
   }
 }
 
-// Start the server
+// Start server
+async function startServer() {
+  try {
+    await connectToDatabase();
+    await createDemoUser();
+    
+    const PORT = process.env.PORT || 3001;
+    server.listen(PORT, () => {
+      console.log(`🚀 Server running on port ${PORT}`);
+      console.log(`📊 Batac Soil Monitoring API is ready!`);
+      console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
+    });
+  } catch (error) {
+    console.error('Failed to start server:', error);
+    process.exit(1);
+  }
+}
+
 startServer();
