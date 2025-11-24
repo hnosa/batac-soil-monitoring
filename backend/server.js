@@ -139,15 +139,6 @@ app.get('/test', (req, res) => {
   res.sendFile(path.join(__dirname, 'test-client.html'));
 });
 
-// ======== 404 HANDLER FOR UNKNOWN API ROUTES ========
-app.all('/api/*', (req, res) => {
-  res.status(404).json({ 
-    error: 'API endpoint not found',
-    path: req.path,
-    method: req.method
-  });
-});
-
 // ======== SOCKET.IO ========
 function generateMockSensorData() {
   const locations = [
