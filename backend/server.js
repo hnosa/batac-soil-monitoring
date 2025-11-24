@@ -131,17 +131,21 @@ if (process.env.NODE_ENV === 'production') {
   });
 }
 
-// 404 handler for API routes
-app.use('/api/*', (req, res) => {
-  res.status(404).json({ error: 'API endpoint not found' });
-});
-
 // Serve test page (development only)
 app.get('/test', (req, res) => {
   if (process.env.NODE_ENV === 'production') {
     return res.status(404).json({ message: 'Test page not available in production' });
   }
   res.sendFile(path.join(__dirname, 'test-client.html'));
+});
+
+// ======== 404 HANDLER FOR UNKNOWN API ROUTES ========
+app.all('/api/*', (req, res) => {
+  res.status(404).json({ 
+    error: 'API endpoint not found',
+    path: req.path,
+    method: req.method
+  });
 });
 
 // ======== SOCKET.IO ========
