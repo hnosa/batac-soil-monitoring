@@ -1,4 +1,4 @@
-/* frontend/src/App.css - Enhanced with CSS Variables */
+/* frontend/src/App.css - Enhanced with CSS Variables and Mobile Navigation */
 :root {
   /* Light Theme Defaults */
   --bg-primary: #ffffff;
@@ -228,32 +228,121 @@ body {
   transform: scale(1.1);
 }
 
-/* Responsive Design */
+/* ===== MOBILE RESPONSIVE DESIGN ===== */
 @media (max-width: 768px) {
+  .app-header {
+    padding: 0.8rem 1rem !important;
+  }
+  
   .header-content {
-    flex-direction: column;
-    gap: 1rem;
-    text-align: center;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 0.8rem !important;
+    margin-bottom: 0.8rem !important;
   }
   
+  .header-left {
+    text-align: center !important;
+  }
+  
+  .header-left h1 {
+    font-size: 1.3rem !important;
+    margin-bottom: 0.5rem !important;
+  }
+  
+  .connection-status {
+    font-size: 0.8rem !important;
+    padding: 0.4rem 0.8rem !important;
+  }
+  
+  /* Mobile Navigation - Horizontal Scroll */
   .navigation {
-    flex-wrap: wrap;
-    justify-content: center;
+    display: flex !important;
+    flex-wrap: nowrap !important;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    gap: 0.5rem !important;
+    padding: 0.5rem 0 !important;
+    -webkit-overflow-scrolling: touch !important;
+    scrollbar-width: none !important;
   }
   
-  .main-content {
-    padding: 1rem;
+  .navigation::-webkit-scrollbar {
+    display: none !important;
   }
   
+  .navigation button {
+    flex: 0 0 auto !important;
+    min-width: 120px !important;
+    padding: 0.6rem 1rem !important;
+    font-size: 0.8rem !important;
+    white-space: nowrap !important;
+  }
+  
+  /* Header Right Adjustments */
   .header-right {
-    flex-direction: column;
-    gap: 0.5rem;
+    order: -1 !important;
+    justify-content: center !important;
+    gap: 0.8rem !important;
   }
   
   .user-info {
-    flex-direction: column;
-    gap: 0.5rem;
-    text-align: center;
+    flex-direction: row !important;
+    flex-wrap: wrap !important;
+    justify-content: center !important;
+    gap: 0.5rem !important;
+    font-size: 0.85rem !important;
+    padding: 0.4rem 0.8rem !important;
+  }
+  
+  .user-info span {
+    width: 100% !important;
+    text-align: center !important;
+    margin-bottom: 0.3rem !important;
+  }
+  
+  .profile-btn, .logout-btn {
+    padding: 0.4rem 0.8rem !important;
+    font-size: 0.75rem !important;
+  }
+  
+  .main-content {
+    padding: 1rem !important;
+  }
+}
+
+@media (max-width: 480px) {
+  /* Extra Small Devices */
+  .header-left h1 {
+    font-size: 1.1rem !important;
+  }
+  
+  .navigation button {
+    min-width: 100px !important;
+    padding: 0.5rem 0.8rem !important;
+    font-size: 0.75rem !important;
+  }
+  
+  .user-info {
+    font-size: 0.8rem !important;
+  }
+  
+  .app-footer {
+    padding: 0.8rem !important;
+    font-size: 0.8rem !important;
+  }
+}
+
+@media (max-width: 360px) {
+  /* Very Small Devices - Compact Navigation */
+  .navigation button {
+    min-width: 90px !important;
+    padding: 0.4rem 0.6rem !important;
+    font-size: 0.7rem !important;
+  }
+  
+  .header-left h1 {
+    font-size: 1rem !important;
   }
 }
 
